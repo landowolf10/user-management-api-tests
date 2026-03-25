@@ -68,6 +68,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: reports
+    
+      - name: Debug structure
+        run: |
+            echo "===== REPORTS STRUCTURE ====="
+            ls -R reports || true
+
+            echo "===== CURRENT DIR ====="
+            pwd
 
       - name: Merge reports + create index
         run: |
@@ -95,6 +103,10 @@ jobs:
             </body>
             </html>
             EOF
+       - name: Debug public folder
+        run: |
+            echo "===== PUBLIC STRUCTURE ====="
+            ls -R public || true
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v4
