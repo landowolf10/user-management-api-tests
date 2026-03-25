@@ -1,6 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
 const env = process.env.TEST_ENV || 'dev';
+const basePath = process.env.BASE_PATH || '';
 
 export default defineConfig({
   testDir: './src/tests',
@@ -11,7 +12,11 @@ export default defineConfig({
   },
   reporter: [
     ['list'],
-    ['html', { outputFolder: `playwright-report-${env}`, open: 'never' }],
+    ['html', { 
+      outputFolder: `playwright-report-${env}`,
+      open: 'never',
+      baseURL: basePath
+    }],
     ['junit', { outputFile: 'reports/junit/results.xml' }]
   ],
 });

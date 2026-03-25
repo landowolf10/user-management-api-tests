@@ -43,11 +43,11 @@ jobs:
 
       - name: Run tests
         run: |
-          if [ "${{ matrix.env }}" = "dev" ]; then
-            TEST_ENV=dev npx playwright test src/tests/users.dev.spec.ts
-          else
-            TEST_ENV=prod npx playwright test src/tests/users.prod.spec.ts
-          fi
+            if [ "${{ matrix.env }}" = "dev" ]; then
+            TEST_ENV=dev BASE_PATH=/user-management-api-tests npx playwright test src/tests/users.dev.spec.ts
+            else
+            TEST_ENV=prod BASE_PATH=/user-management-api-tests npx playwright test src/tests/users.prod.spec.ts
+            fi
         env:
           BASE_URL: http://localhost:3000
 
