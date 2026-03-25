@@ -4,11 +4,6 @@ on:
   push:
     branches: [ main ]
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 jobs:
   e2e:
     runs-on: ubuntu-latest
@@ -19,18 +14,18 @@ jobs:
         env: [dev, prod]
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Start API (Docker)
+      # 🚀 NO browsers (optimizado)
+      # - run: npx playwright install --with-deps
+
+      - name: Start API
         run: |
           docker run -d -p 3000:3000 ghcr.io/danielsilva-loanpro/sdet-interview-challenge:latest
           sleep 5
@@ -42,12 +37,7 @@ jobs:
           done
 
       - name: Run tests
-        run: |
-          if [ "${{ matrix.env }}" = "dev" ]; then
-            TEST_ENV=dev BASE_PATH=/user-management-api-tests npx playwright test src/tests/users.dev.spec.ts
-          else
-            TEST_ENV=prod BASE_PATH=/user-management-api-tests npx playwright test src/tests/users.prod.spec.ts
-          fi
+        run: npx playwright test --grep @${{ matrix.env }}
         env:
           BASE_URL: http://localhost:3000
 
@@ -56,12 +46,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: report-${{ matrix.env }}
-          path: playwright-report-${{ matrix.env }}/
+          path: playwright-report/
 
   deploy-report:
     needs: e2e
     runs-on: ubuntu-latest
-    if: always()
 
     steps:
       - name: Download all reports
@@ -69,63 +58,13 @@ jobs:
         with:
           path: reports
 
-      # 🔍 DEBUG REAL (clave si algo falla)
-      - name: Debug reports structure
+      - name: Merge reports
         run: |
-          echo "===== REPORTS STRUCTURE ====="
-          ls -R reports || true
+          mkdir public
+          cp -r reports/report-dev/* public/
+          cp -r reports/report-prod/* public/prod || true
 
-      - name: Merge reports + create index (robusto)
-        run: |
-          mkdir -p public/dev
-          mkdir -p public/prod
-
-          echo "🔍 Buscando reportes..."
-
-          # DEV
-          DEV_REPORT=$(find reports/report-dev -name index.html | head -n 1)
-          if [ -n "$DEV_REPORT" ]; then
-            echo "DEV report encontrado en: $DEV_REPORT"
-            DEV_DIR=$(dirname "$DEV_REPORT")
-            cp -r $DEV_DIR/* public/dev/
-          else
-            echo "❌ No DEV report found"
-          fi
-
-          # PROD
-          PROD_REPORT=$(find reports/report-prod -name index.html | head -n 1)
-          if [ -n "$PROD_REPORT" ]; then
-            echo "PROD report encontrado en: $PROD_REPORT"
-            PROD_DIR=$(dirname "$PROD_REPORT")
-            cp -r $PROD_DIR/* public/prod/
-          else
-            echo "❌ No PROD report found"
-          fi
-
-          # Crear menú principal
-          cat <<EOF > public/index.html
-          <html>
-            <head>
-              <title>Playwright Reports</title>
-              <style>
-                body { font-family: Arial; text-align: center; padding: 50px; }
-                a { display: block; margin: 20px; font-size: 20px; text-decoration: none; }
-              </style>
-            </head>
-            <body>
-              <h1>Test Reports</h1>
-              <a href="./dev/index.html">DEV Report</a>
-              <a href="./prod/index.html">PROD Report</a>
-            </body>
-          </html>
-          EOF
-
-      - name: Debug public folder
-        run: |
-          echo "===== PUBLIC STRUCTURE ====="
-          ls -R public || true
-
-      - name: Setup GitHub Pages
+      - name: Setup Pages
         uses: actions/configure-pages@v4
 
       - name: Upload Pages artifact
