@@ -1,0 +1,58 @@
+name: E2E Tests - User API
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  schedule:
+    - cron: '0 6 * * *' # Corre diario a las 6 AM UTC
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [dev, prod]
+
+    name: Run E2E - ${{ matrix.env }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Start API (Docker)
+        run: |
+          docker run -d -p 3000:3000 ghcr.io/danielsilva-loanpro/sdet-interview-challenge:latest
+          sleep 5
+
+      - name: Wait for API / Health check
+        run: |
+          until curl -s http://localhost:3000/${{ matrix.env }}/users > /dev/null; do
+            echo "Waiting for API..."
+            sleep 2
+          done
+
+      - name: Run tests
+        run: npx playwright test --grep @${{ matrix.env }}
+        env:
+          BASE_URL: http://localhost:3000
+
+      - name: Upload Playwright Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.env }}
+          path: playwright-report/
