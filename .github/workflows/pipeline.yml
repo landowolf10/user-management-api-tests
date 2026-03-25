@@ -70,10 +70,8 @@ jobs:
         run: |
             mkdir public
 
-            cp -r reports/report-dev/playwright-report/* public/ || true
-
-            mkdir -p public/prod
-            cp -r reports/report-prod/playwright-report/* public/prod/ || true
+            cp -r reports/report-dev/playwright-report public/dev || true
+            cp -r reports/report-prod/playwright-report public/prod || true
 
             cat <<EOF > public/index.html
             <html>
@@ -86,7 +84,7 @@ jobs:
             </head>
             <body>
                 <h1>Test Reports</h1>
-                <a href="./index.html">DEV Report</a>
+                <a href="./dev/index.html">DEV Report</a>
                 <a href="./prod/index.html">PROD Report</a>
             </body>
             </html>
