@@ -19,15 +19,21 @@ jobs:
         env: [dev, prod]
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Start API
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Start API (Docker)
         run: |
           docker run -d -p 3000:3000 ghcr.io/danielsilva-loanpro/sdet-interview-challenge:latest
           sleep 5
@@ -39,7 +45,12 @@ jobs:
           done
 
       - name: Run tests
-        run: npx playwright test --grep @${{ matrix.env }}
+        run: |
+          if [ "${{ matrix.env }}" = "dev" ]; then
+            TEST_ENV=dev BASE_PATH=/user-management-api-tests npx playwright test src/tests/users.dev.spec.ts
+          else
+            TEST_ENV=prod BASE_PATH=/user-management-api-tests npx playwright test src/tests/users.prod.spec.ts
+          fi
         env:
           BASE_URL: http://localhost:3000
 
@@ -48,7 +59,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: report-${{ matrix.env }}
-          path: playwright-report/
+          path: playwright-report-${{ matrix.env }}/
 
   deploy-report:
     needs: e2e
@@ -61,13 +72,52 @@ jobs:
         with:
           path: reports
 
-      - name: Merge reports
+      - name: Merge reports + create index (robusto)
         run: |
-          mkdir public
-          cp -r reports/report-dev/* public/
-          cp -r reports/report-prod/* public/prod || true
+          mkdir -p public/dev
+          mkdir -p public/prod
 
-      - name: Setup Pages
+          echo "🔍 Buscando reportes..."
+
+          # DEV
+          DEV_REPORT=$(find reports/report-dev -name index.html | head -n 1)
+          if [ -n "$DEV_REPORT" ]; then
+            echo "DEV report encontrado en: $DEV_REPORT"
+            DEV_DIR=$(dirname "$DEV_REPORT")
+            cp -r $DEV_DIR/* public/dev/
+          else
+            echo "No DEV report found"
+          fi
+
+          # PROD
+          PROD_REPORT=$(find reports/report-prod -name index.html | head -n 1)
+          if [ -n "$PROD_REPORT" ]; then
+            echo "PROD report encontrado en: $PROD_REPORT"
+            PROD_DIR=$(dirname "$PROD_REPORT")
+            cp -r $PROD_DIR/* public/prod/
+          else
+            echo "No PROD report found"
+          fi
+
+          # Crear menú principal
+          cat <<EOF > public/index.html
+          <html>
+            <head>
+              <title>Playwright Reports</title>
+              <style>
+                body { font-family: Arial; text-align: center; padding: 50px; }
+                a { display: block; margin: 20px; font-size: 20px; text-decoration: none; }
+              </style>
+            </head>
+            <body>
+              <h1>Test Reports</h1>
+              <a href="./dev/index.html">DEV Report</a>
+              <a href="./prod/index.html">PROD Report</a>
+            </body>
+          </html>
+          EOF
+
+      - name: Setup GitHub Pages
         uses: actions/configure-pages@v4
 
       - name: Upload Pages artifact
