@@ -1,5 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
+const env = process.env.TEST_ENV || 'dev';
+
 export default defineConfig({
   testDir: './src/tests',
   timeout: 30000,
@@ -9,7 +11,7 @@ export default defineConfig({
   },
   reporter: [
     ['list'],
-    ['html', { outputFolder: 'playwright-report', open: 'never' }],
+    ['html', { outputFolder: `playwright-report-${env}`, open: 'never' }],
     ['junit', { outputFile: 'reports/junit/results.xml' }]
   ],
 });
