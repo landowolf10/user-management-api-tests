@@ -48,6 +48,7 @@ jobs:
   deploy-report:
     needs: e2e
     runs-on: ubuntu-latest
+    if: always()
 
     steps:
       - name: Download all reports
