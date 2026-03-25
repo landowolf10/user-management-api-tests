@@ -22,9 +22,6 @@ jobs:
 
       - run: npm ci
 
-      # 🚀 NO browsers (optimizado)
-      # - run: npx playwright install --with-deps
-
       - name: Start API
         run: |
           docker run -d -p 3000:3000 ghcr.io/danielsilva-loanpro/sdet-interview-challenge:latest
@@ -51,6 +48,7 @@ jobs:
   deploy-report:
     needs: e2e
     runs-on: ubuntu-latest
+    if: always()
 
     steps:
       - name: Download all reports
