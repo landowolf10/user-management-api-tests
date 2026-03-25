@@ -43,11 +43,11 @@ jobs:
 
       - name: Run tests
         run: |
-            if [ "${{ matrix.env }}" = "dev" ]; then
+          if [ "${{ matrix.env }}" = "dev" ]; then
             TEST_ENV=dev BASE_PATH=/user-management-api-tests npx playwright test src/tests/users.dev.spec.ts
-            else
+          else
             TEST_ENV=prod BASE_PATH=/user-management-api-tests npx playwright test src/tests/users.prod.spec.ts
-            fi
+          fi
         env:
           BASE_URL: http://localhost:3000
 
@@ -68,45 +68,62 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: reports
-    
-      - name: Debug structure
+
+      # 🔍 DEBUG REAL (clave si algo falla)
+      - name: Debug reports structure
         run: |
-            echo "===== REPORTS STRUCTURE ====="
-            ls -R reports || true
+          echo "===== REPORTS STRUCTURE ====="
+          ls -R reports || true
 
-            echo "===== CURRENT DIR ====="
-            pwd
-
-      - name: Merge reports + create index
+      - name: Merge reports + create index (robusto)
         run: |
-            mkdir public
+          mkdir -p public/dev
+          mkdir -p public/prod
 
-            mkdir -p public/dev
-            mkdir -p public/prod
+          echo "🔍 Buscando reportes..."
 
-            cp -r reports/report-dev/playwright-report-dev/* public/dev/ || true
-            cp -r reports/report-prod/playwright-report-prod/* public/prod/ || true
+          # DEV
+          DEV_REPORT=$(find reports/report-dev -name index.html | head -n 1)
+          if [ -n "$DEV_REPORT" ]; then
+            echo "DEV report encontrado en: $DEV_REPORT"
+            DEV_DIR=$(dirname "$DEV_REPORT")
+            cp -r $DEV_DIR/* public/dev/
+          else
+            echo "❌ No DEV report found"
+          fi
 
-            cat <<EOF > public/index.html
-            <html>
+          # PROD
+          PROD_REPORT=$(find reports/report-prod -name index.html | head -n 1)
+          if [ -n "$PROD_REPORT" ]; then
+            echo "PROD report encontrado en: $PROD_REPORT"
+            PROD_DIR=$(dirname "$PROD_REPORT")
+            cp -r $PROD_DIR/* public/prod/
+          else
+            echo "❌ No PROD report found"
+          fi
+
+          # Crear menú principal
+          cat <<EOF > public/index.html
+          <html>
             <head>
-                <title>Playwright Reports</title>
-                <style>
+              <title>Playwright Reports</title>
+              <style>
                 body { font-family: Arial; text-align: center; padding: 50px; }
                 a { display: block; margin: 20px; font-size: 20px; text-decoration: none; }
-                </style>
+              </style>
             </head>
             <body>
-                <h1>Test Reports</h1>
-                <a href="./dev/index.html">DEV Report</a>
-                <a href="./prod/index.html">PROD Report</a>
+              <h1>Test Reports</h1>
+              <a href="./dev/index.html">DEV Report</a>
+              <a href="./prod/index.html">PROD Report</a>
             </body>
-            </html>
-            EOF
-       - name: Debug public folder
+          </html>
+          EOF
+
+      - name: Debug public folder
         run: |
-            echo "===== PUBLIC STRUCTURE ====="
-            ls -R public || true
+          echo "===== PUBLIC STRUCTURE ====="
+          ls -R public || true
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v4
