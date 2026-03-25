@@ -39,7 +39,12 @@ jobs:
           done
 
       - name: Run tests
-        run: npx playwright test --grep @${{ matrix.env }}
+        run: |
+            if [ "${{ matrix.env }}" = "dev" ]; then
+            npx playwright test src/tests/users.dev.spec.ts
+            else
+            npx playwright test src/tests/users.prod.spec.ts
+            fi
         env:
           BASE_URL: http://localhost:3000
 
