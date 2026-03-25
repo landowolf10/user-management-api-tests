@@ -71,29 +71,30 @@ jobs:
 
       - name: Merge reports + create index
         run: |
-          mkdir public
+            mkdir public
 
-          # Copiar reportes (estructura completa)
-          cp -r reports/report-dev/playwright-report-dev public/dev || true
-          cp -r reports/report-prod/playwright-report-prod public/prod || true
+            mkdir -p public/dev
+            mkdir -p public/prod
 
-          # Crear index.html con menú
-          cat <<EOF > public/index.html
-          <html>
+            cp -r reports/report-dev/playwright-report-dev/* public/dev/ || true
+            cp -r reports/report-prod/playwright-report-prod/* public/prod/ || true
+
+            cat <<EOF > public/index.html
+            <html>
             <head>
-              <title>Playwright Reports</title>
-              <style>
+                <title>Playwright Reports</title>
+                <style>
                 body { font-family: Arial; text-align: center; padding: 50px; }
                 a { display: block; margin: 20px; font-size: 20px; text-decoration: none; }
-              </style>
+                </style>
             </head>
             <body>
-              <h1>Test Reports</h1>
-              <a href="./dev/index.html">DEV Report</a>
-              <a href="./prod/index.html">PROD Report</a>
+                <h1>Test Reports</h1>
+                <a href="./dev/index.html">DEV Report</a>
+                <a href="./prod/index.html">PROD Report</a>
             </body>
-          </html>
-          EOF
+            </html>
+            EOF
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v4
