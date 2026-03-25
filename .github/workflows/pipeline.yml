@@ -40,11 +40,11 @@ jobs:
 
       - name: Run tests
         run: |
-            if [ "${{ matrix.env }}" = "dev" ]; then
-                TEST_ENV=dev npx playwright test src/tests/users.dev.spec.ts
-            else
-                TEST_ENV=prod npx playwright test src/tests/users.prod.spec.ts
-            fi
+          if [ "${{ matrix.env }}" = "dev" ]; then
+            npx playwright test src/tests/users.dev.spec.ts
+          else
+            npx playwright test src/tests/users.prod.spec.ts
+          fi
         env:
           BASE_URL: http://localhost:3000
 
@@ -53,7 +53,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: report-${{ matrix.env }}
-          path: playwright-report-${{ matrix.env }}/
+          path: playwright-report/
 
   deploy-report:
     needs: e2e
@@ -66,11 +66,31 @@ jobs:
         with:
           path: reports
 
-      - name: Merge reports
+      - name: Merge reports + create index
         run: |
           mkdir public
+
+          # Copiar reportes
           cp -r reports/report-dev/* public/
           cp -r reports/report-prod/* public/prod || true
+
+          # Crear index.html con menú
+          cat <<EOF > public/index.html
+          <html>
+            <head>
+              <title>Playwright Reports</title>
+              <style>
+                body { font-family: Arial; text-align: center; padding: 50px; }
+                a { display: block; margin: 20px; font-size: 20px; text-decoration: none; }
+              </style>
+            </head>
+            <body>
+              <h1>Test Reports</h1>
+              <a href="./index.html">DEV Report</a>
+              <a href="./prod/index.html">PROD Report</a>
+            </body>
+          </html>
+          EOF
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
