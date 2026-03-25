@@ -1,11 +1,8 @@
-name: E2E Tests - User API
+name: E2E Tests + Report
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-  schedule:
-    - cron: '0 6 * * *' # Corre diario a las 6 AM UTC
 
 jobs:
   e2e:
@@ -16,29 +13,23 @@ jobs:
       matrix:
         env: [dev, prod]
 
-    name: Run E2E - ${{ matrix.env }}
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Start API (Docker)
+      - name: Start API
         run: |
           docker run -d -p 3000:3000 ghcr.io/danielsilva-loanpro/sdet-interview-challenge:latest
           sleep 5
 
-      - name: Wait for API / Health check
+      - name: Wait for API
         run: |
           until curl -s http://localhost:3000/${{ matrix.env }}/users > /dev/null; do
-            echo "Waiting for API..."
             sleep 2
           done
 
@@ -47,9 +38,36 @@ jobs:
         env:
           BASE_URL: http://localhost:3000
 
-      - name: Upload Playwright Report
+      - name: Upload report artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-${{ matrix.env }}
+          name: report-${{ matrix.env }}
           path: playwright-report/
+
+  deploy-report:
+    needs: e2e
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all reports
+        uses: actions/download-artifact@v4
+        with:
+          path: reports
+
+      - name: Merge reports
+        run: |
+          mkdir public
+          cp -r reports/report-dev/* public/
+          cp -r reports/report-prod/* public/prod || true
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
