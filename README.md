@@ -63,11 +63,26 @@ docker pull landowolf/users-api-tests:latest
 
 This project includes a fully automated pipeline using GitHub Actions that:
 
-- Runs tests using a Dockerized environment  
-- Executes tests against the API  
-- Generates the Playwright HTML report  
-- Uploads the report as an artifact  
-- Publishes the report to GitHub Pages  
+- Runs tests using a Dockerized environment
+- Executes tests against the API
+- Runs tests in parallel across environments (`dev` and `prod`)
+- Generates the Playwright HTML report
+- Uploads the report as an artifact
+- Publishes the report to GitHub Pages
+
+### Parallel Execution Strategy
+
+Tests are configured using Playwright projects to run simultaneously against:
+
+- `/dev` environment  
+- `/prod` environment  
+
+### Why?
+
+- Reduces execution time  
+- Validates environment isolation  
+- Detects environment-specific issues  
+- Improves coverage without duplicating test logic  
 
 ## Known Issues
 
@@ -96,3 +111,5 @@ BASE_URL=http://api:3000
 - Custom assertions
 - Dockerized execution
 - Static HTML reports
+- CI/CD with automated report publishing  
+- Parallel execution across environments
