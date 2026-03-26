@@ -43,7 +43,7 @@ export class UserClient {
   deleteUser(email: string, token?: string) {
     return this.request.delete(`${this.basePath}/${email}`, {
       headers: {
-            Authentication: token ?? ENV.TOKEN, // usa el token dado o el default
+            Authentication: token ?? ENV.TOKEN,
         }
     });
   }

@@ -4,14 +4,20 @@ import { Assertions } from '../helpers/assertions';
 
 Assertions.allowKnownBugs = true;
 
+type Env = 'dev' | 'prod';
+
 export const test = base.extend<{
-  devClient: UserClient;
-  prodClient: UserClient;
+  client: UserClient;
+  env: Env;
 }>({
-  devClient: async ({ request }, use) => {
-    await use(new UserClient(request, 'dev'));
+  client: async ({ request }, use, testInfo) => {
+    const env = testInfo.project.name as Env;
+    const client = new UserClient(request, env);
+    await use(client);
   },
-  prodClient: async ({ request }, use) => {
-    await use(new UserClient(request, 'prod'));
-  }
+
+  env: async ({ }, use, testInfo) => {
+    const env = testInfo.project.name as Env;
+    await use(env);
+  },
 });

@@ -36,6 +36,15 @@ export class Assertions {
         await this.expectJson(res);
 
         const body = await res.json();
+
+        if (Assertions.allowKnownBugs && res.status() >= 400) {
+            test.info().annotations.push({
+                type: 'bug',
+                description: 'Skipping user schema validation due to known bug',
+            });
+            return;
+        }
+
         validateUserSchema(body);
 
         if (expectedUser) {

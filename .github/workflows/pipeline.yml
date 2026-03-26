@@ -13,11 +13,6 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
 
-    strategy:
-      fail-fast: false
-      matrix:
-        env: [dev, prod]
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -40,17 +35,12 @@ jobs:
 
       - name: Wait for API
         run: |
-          until curl -s http://localhost:3000/${{ matrix.env }}/users > /dev/null; do
+          until curl -s http://localhost:3000/dev/users > /dev/null; do
             sleep 2
           done
 
-      - name: Run tests
-        run: |
-          if [ "${{ matrix.env }}" = "dev" ]; then
-            TEST_ENV=dev BASE_PATH=/user-management-api-tests npx playwright test src/tests/users.dev.spec.ts
-          else
-            TEST_ENV=prod BASE_PATH=/user-management-api-tests npx playwright test src/tests/users.prod.spec.ts
-          fi
+      - name: Run tests (dev + prod via projects)
+        run: npx playwright test
         env:
           BASE_URL: http://localhost:3000
 
@@ -58,8 +48,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: report-${{ matrix.env }}
-          path: playwright-report-${{ matrix.env }}/
+          name: playwright-report
+          path: playwright-report/
 
   deploy-report:
     needs: e2e
@@ -67,50 +57,11 @@ jobs:
     if: always()
 
     steps:
-      - name: Download all reports
+      - name: Download report
         uses: actions/download-artifact@v4
         with:
-          path: reports
-
-      - name: Merge reports + create index (robusto)
-        run: |
-          mkdir -p public/dev
-          mkdir -p public/prod
-
-          DEV_REPORT=$(find reports/report-dev -name index.html | head -n 1)
-          if [ -n "$DEV_REPORT" ]; then
-            echo "DEV report encontrado en: $DEV_REPORT"
-            DEV_DIR=$(dirname "$DEV_REPORT")
-            cp -r $DEV_DIR/* public/dev/
-          else
-            echo "No DEV report found"
-          fi
-
-          PROD_REPORT=$(find reports/report-prod -name index.html | head -n 1)
-          if [ -n "$PROD_REPORT" ]; then
-            echo "PROD report encontrado en: $PROD_REPORT"
-            PROD_DIR=$(dirname "$PROD_REPORT")
-            cp -r $PROD_DIR/* public/prod/
-          else
-            echo "No PROD report found"
-          fi
-
-          cat <<EOF > public/index.html
-          <html>
-            <head>
-              <title>Playwright Reports</title>
-              <style>
-                body { font-family: Arial; text-align: center; padding: 50px; }
-                a { display: block; margin: 20px; font-size: 20px; text-decoration: none; }
-              </style>
-            </head>
-            <body>
-              <h1>Test Reports</h1>
-              <a href="./dev/index.html">DEV Report</a>
-              <a href="./prod/index.html">PROD Report</a>
-            </body>
-          </html>
-          EOF
+          name: playwright-report
+          path: public
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v4
