@@ -31,7 +31,7 @@ npm run test
 ### 2. Run with Docker (recommended)
 
 ```
-docker compose up --build
+docker compose up
 ```
 
 ## Test Report
