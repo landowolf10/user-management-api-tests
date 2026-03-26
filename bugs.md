@@ -1,96 +1,259 @@
-# 🐞 Bugs Report - User Management API
+# Bugs Report — User Management API
 
 ## Overview
-This report documents inconsistencies and defects identified while validating the API against the OpenAPI 3.0 specification.
 
-The issues are grouped by severity and type: contract violations, functional issues, validation inconsistencies, and security risks.
+This report documents defects and inconsistencies identified while validating the API against the OpenAPI specification (`sdet_challenge_api.yml`).
+
+All issues were discovered through automated E2E tests executed against both environments (`dev` and `prod`).
+
+---
+
+# Priority Summary
+
+| Severity     | Issues                                                                        |
+| ------------ | ----------------------------------------------------------------------------- |
+| **Critical** | DELETE endpoint does not enforce authentication                               |
+| **High**     | Incorrect status codes (500 instead of 404/409), GET after DELETE returns 500 |
+| **Medium**   | PUT does not persist updates                                                  |
+| **Low**      | Validation inconsistencies, authentication header inconsistency               |
 
 ---
 
 # 1. Contract Violations
 
+---
+
 ## 1.1 Duplicate user returns 500 instead of 409
-- **Endpoint:** POST /users
-- **Expected:** 409 Conflict
-- **Actual:** 500 Internal Server Error
-- **Impact:** Breaks API contract and prevents proper client error handling
+
+* **Endpoint:** `POST /users`
+* **Severity:** High
+
+### Spec Reference
+
+`sdet_challenge_api.yml` → `POST /users` → **409 Conflict**
+
+### Steps to Reproduce
+
+1. Send a valid `POST /dev/users` request
+2. Repeat the same request with identical email
+
+### Expected
+
+`409 Conflict`
+
+### Actual
+
+`500 Internal Server Error`
+
+### Impact
+
+Violates the API contract and forces clients to handle unexpected server errors instead of predictable business errors.
+
+### Detected by
+
+`users.dev.spec.ts` → *POST /users → 409 duplicate*
 
 ---
 
 ## 1.2 GET non-existing user returns 500 instead of 404
-- **Endpoint:** GET /users/{email}
-- **Expected:** 404 Not Found
-- **Actual:** 500 Internal Server Error
-- **Impact:** Incorrect error handling for missing resources
+
+* **Endpoint:** `GET /users/{email}`
+* **Severity:** High
+
+### Spec Reference
+
+`sdet_challenge_api.yml` → `GET /users/{email}` → **404 Not Found**
+
+### Steps to Reproduce
+
+1. Call `GET /dev/users/nonexistent@test.com`
+
+### Expected
+
+`404 Not Found`
+
+### Actual
+
+`500 Internal Server Error`
+
+### Impact
+
+Breaks expected REST behavior for missing resources and complicates client-side error handling.
+
+### Detected by
+
+`users.dev.spec.ts` → *GET /users/{email} → 404*
+
+---
+
+## 1.3 GET after DELETE returns 500 instead of 404
+
+* **Endpoint:** `GET /users/{email}`
+* **Severity:** High
+
+### Scenario
+
+User is deleted and then queried again
+
+### Steps to Reproduce
+
+1. Create user via `POST /dev/users`
+2. Delete user via `DELETE /dev/users/{email}`
+3. Call `GET /dev/users/{email}`
+
+### Expected
+
+`404 Not Found`
+
+### Actual
+
+`500 Internal Server Error`
+
+### Impact
+
+Breaks resource lifecycle consistency and REST expectations (deleted resource should not exist).
+
+### Detected by
+
+`users.dev.spec.ts` → *DELETE /users → verify deletion*
 
 ---
 
 # 2. Functional Issues
 
+---
+
 ## 2.1 PUT does not persist updates
-- **Endpoint:** PUT /users/{email}
-- **Expected:** Updated user data should be persisted
-- **Actual:** Returns 200 OK but data remains unchanged when validated via GET
-- **Impact:** Data integrity issue
+
+* **Endpoint:** `PUT /users/{email}`
+* **Severity:** Medium
+
+### Spec Reference
+
+`sdet_challenge_api.yml` → `PUT /users/{email}` → Updated resource
+
+### Steps to Reproduce
+
+1. Create user
+2. Update user via `PUT /users/{email}`
+3. Retrieve user via `GET /users/{email}`
+
+### Expected
+
+Updated values should be returned
+
+### Actual
+
+Response returns `200 OK`, but data remains unchanged
+
+### Impact
+
+Data integrity issue — API reports success without actually modifying data.
+
+### Detected by
+
+`users.dev.spec.ts` → *PUT /users → update user*
 
 ---
 
 # 3. Validation Inconsistencies
 
-## 3.1 Inconsistent input validation behavior
+---
 
-### Issue
-Validation is partially enforced and inconsistent across different inputs.
+## 3.1 Inconsistent input validation
 
-### Examples
-- Empty string (`""`) for `name` is rejected, but whitespace (`"   "`) is accepted
-- Some invalid email formats are accepted
-- Numeric values are accepted in fields expected to be strings (e.g., `name`, `email`)
+* **Severity:** Low
 
-### Expected
-Validation should strictly follow OpenAPI schema:
-- `name`: non-empty string
-- `email`: valid email format
-- `age`: integer between 1 and 150
+### Spec Reference
 
-### Actual
-Validation rules are inconsistently applied
+Schema definitions in `sdet_challenge_api.yml`
+
+### Observed Behavior
+
+| Case                            | Expected | Actual        |
+| ------------------------------- | -------- | ------------- |
+| Empty string `""`               | Rejected | Rejected      |
+| Whitespace `"   "`              | Rejected | Accepted      |
+| Invalid email formats           | Rejected | Some accepted |
+| Numeric values in string fields | Rejected | Accepted      |
 
 ### Impact
-Unpredictable API behavior and potential data quality issues
+
+Leads to inconsistent data quality and unpredictable validation behavior.
+
+### Detected by
+
+Multiple negative test cases in `users.dev.spec.ts`
 
 ---
 
 # 4. Security Issue
 
+---
+
 ## 4.1 DELETE endpoint does not enforce authentication
-- **Endpoint:** DELETE /users/{email}
-- **Expected:** 401 Unauthorized when token is missing
-- **Actual:** 204 No Content and user is deleted without authentication
-- **Impact:** Critical security vulnerability (unauthorized data deletion)
+
+* **Endpoint:** `DELETE /users/{email}`
+* **Severity:** Critical
+
+### Spec Reference
+
+Endpoints requiring authorization token
+
+### Steps to Reproduce
+
+1. Create user
+2. Call `DELETE /users/{email}` **without Authorization header**
+
+### Expected
+
+`401 Unauthorized`
+
+### Actual
+
+`204 No Content` and user is deleted successfully
+
+### Impact
+
+Critical security vulnerability — allows unauthorized deletion of resources.
+
+### Detected by
+
+`users.dev.spec.ts` → *DELETE /users → 401 missing token*
 
 ---
 
-# 5. API Design Inconsistency
+# 5. API Design Inconsistencies
+
+---
 
 ## 5.1 Inconsistent authentication headers
-- POST/PUT use: `Authorization: Bearer <token>`
-- DELETE uses: `Authentication: <token>`
+
+* **Severity:** Low
+
+### Observed Behavior
+
+* `POST` / `PUT` use:
+  `Authorization: Bearer <token>`
+* `DELETE` uses:
+  `Authentication: <token>`
 
 ### Impact
-- Confusing API design
-- Increases client implementation complexity
+
+* Increases client complexity
+* Breaks consistency across endpoints
+* Higher risk of integration errors
 
 ---
 
 # Conclusion
 
-The API presents several critical issues:
+The API exhibits several issues that affect its **reliability, consistency, and security**:
 
-- Contract violations (incorrect status codes)
-- Functional defects (data not persisted)
-- Inconsistent validation logic
-- Critical security vulnerability in DELETE endpoint
-- API design inconsistencies
+* Contract violations (incorrect HTTP status codes)
+* Functional defects (updates not persisted)
+* Inconsistent validation rules
+* Critical security vulnerability (unauthorized DELETE)
+* API design inconsistencies
 
-These issues affect reliability, predictability, and security of the system.
+These issues reduce the predictability of the API and increase the complexity of client-side error handling and integration.

@@ -44,5 +44,6 @@ export const invalidAge = {
 
 export const ErrorMessages = {
   invalidEmail: 'Invalid email format',
-  ageRange: 'Age must be between 1 and 150'
+  ageRange: 'Age must be between 1 and 150',
+  nameRequired: 'name is required'
 };

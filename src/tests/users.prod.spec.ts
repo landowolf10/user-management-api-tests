@@ -9,5 +9,7 @@ test.describe('@prod Users API', () => {
     const res = await prodClient.createUser(user);
 
     await Assertions.expectStatus(res, 201);
+    await Assertions.expectUser(res, user);
+    await Assertions.expectUserPersisted(prodClient, user.email, user);
   });
 });

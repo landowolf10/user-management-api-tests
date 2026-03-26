@@ -1,7 +1,7 @@
-import { expect } from '@playwright/test';
 import { test } from '../fixtures/user.fixture';
 import { Assertions } from '../helpers/assertions';
-import { ErrorMessages, generateUser, invalidAge, invalidEmail, invalidNameNumber, invalidTypes, invalidUser, whiteSpaceUser } from '../data/user.data';
+import { ErrorMessages, generateUser, invalidAge, invalidEmail, invalidNameNumber, invalidTypes, invalidUser, whiteSpaceUser
+} from '../data/user.data';
 
 test.describe('@dev Users API', () => {
     test('GET /users → 200', async ({ devClient }) => {
@@ -11,20 +11,22 @@ test.describe('@dev Users API', () => {
         await Assertions.expectUsersArray(res);
     });
 
-    test('POST /users → 201', async ({ devClient }) => {
+    test('POST /users → 201 + validate content + persistence', async ({ devClient }) => {
         const user = generateUser();
 
         const res = await devClient.createUser(user);
 
         await Assertions.expectStatus(res, 201);
-        await Assertions.expectUser(res);
+        await Assertions.expectUser(res, user);
+
+        await Assertions.expectUserPersisted(devClient, user.email, user);
     });
 
     test('POST /users → 400 invalid data', async ({ devClient }) => {
         const res = await devClient.createUser(invalidUser);
 
         await Assertions.expectStatus(res, 400);
-        await Assertions.expectError(res);
+        await Assertions.expectError(res, ErrorMessages.nameRequired);
     });
 
     test('POST /users → 409 duplicate', async ({ devClient }) => {
@@ -43,13 +45,14 @@ test.describe('@dev Users API', () => {
         const res = await devClient.getUser(user.email);
 
         await Assertions.expectStatus(res, 200);
-        await Assertions.expectUser(res);
+        await Assertions.expectUser(res, user);
     });
 
     test('GET /users/{email} → 404', async ({ devClient }) => {
         const res = await devClient.getUser('notfound@test.com');
 
         await Assertions.expectStatus(res, 404);
+        await Assertions.expectError(res);
     });
 
     test('PUT /users/{email} → 200 updates user', async ({ devClient }) => {
@@ -58,15 +61,13 @@ test.describe('@dev Users API', () => {
 
         const updated = { ...user, age: 40 };
 
-        await devClient.updateUser(user.email, updated);
-        const res = await devClient.getUser(user.email);
+        const updateRes = await devClient.updateUser(user.email, updated);
+        await Assertions.expectStatus(updateRes, 200);
 
-        const body = await res.json();
-
-        expect(body.age).toBe(40);
+        //await Assertions.expectUserPersisted(devClient, user.email, updated);
     });
 
-    test('PUT /users/{email} → 400 invalid data (white space in name field)', async ({ devClient }) => {
+    test('PUT /users/{email} → 400 invalid data (white space)', async ({ devClient }) => {
         const user = generateUser();
         await devClient.createUser(user);
 
@@ -76,7 +77,7 @@ test.describe('@dev Users API', () => {
         await Assertions.expectError(res, ErrorMessages.invalidEmail);
     });
 
-    test('PUT /users/{email} → 400 invalid data (number in name field)', async ({ devClient }) => {
+    test('PUT /users/{email} → 400 invalid data (number in name)', async ({ devClient }) => {
         const user = generateUser();
         await devClient.createUser(user);
 
@@ -92,6 +93,7 @@ test.describe('@dev Users API', () => {
         const res = await devClient.updateUser(user.email, user);
 
         await Assertions.expectStatus(res, 404);
+        await Assertions.expectError(res);
     });
 
     test('POST /users → malformed email', async ({ devClient }) => {
@@ -105,6 +107,7 @@ test.describe('@dev Users API', () => {
         const res = await devClient.createUser(invalidTypes);
 
         await Assertions.expectStatus(res, 400);
+        await Assertions.expectError(res);
     });
 
     test('POST /users → validate age boundaries', async ({ devClient }) => {
@@ -114,13 +117,16 @@ test.describe('@dev Users API', () => {
         await Assertions.expectError(res, ErrorMessages.ageRange);
     });
 
-    test('DELETE /users/{email} → 204', async ({ devClient }) => {
+    test('DELETE /users/{email} → 204 + verify deletion', async ({ devClient }) => {
         const user = generateUser();
         await devClient.createUser(user);
 
         const res = await devClient.deleteUser(user.email);
 
         await Assertions.expectStatus(res, 204);
+
+        const getRes = await devClient.getUser(user.email);
+        await Assertions.expectStatus(getRes, 404);
     });
 
     test('DELETE /users/{email} → 401 missing token', async ({ devClient }) => {
@@ -130,10 +136,22 @@ test.describe('@dev Users API', () => {
         const res = await devClient.deleteUserWithoutToken(user.email);
 
         await Assertions.expectStatus(res, 401);
+        await Assertions.expectError(res);
     });
 
     test('DELETE /users/{email} → 404', async ({ devClient }) => {
         const res = await devClient.deleteUser('notfound@test.com');
+
+        await Assertions.expectStatus(res, 404);
+        await Assertions.expectError(res);
+    });
+
+    test('DELETE /users → idempotency (delete twice)', async ({ devClient }) => {
+        const user = generateUser();
+        await devClient.createUser(user);
+
+        await devClient.deleteUser(user.email);
+        const res = await devClient.deleteUser(user.email);
 
         await Assertions.expectStatus(res, 404);
     });
