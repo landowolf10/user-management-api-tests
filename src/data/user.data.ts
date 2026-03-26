@@ -20,8 +20,8 @@ export const invalidEmail = {
 
 export const whiteSpaceUser = {
     name: ' ',
-    email: 'invalid-email',
-    age: -1
+    email: `user_${Date.now()}@test.com`,
+    age: 10
 };
 
 export const invalidTypes = {

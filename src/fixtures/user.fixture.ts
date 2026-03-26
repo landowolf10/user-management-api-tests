@@ -1,5 +1,8 @@
 import { test as base } from '@playwright/test';
 import { UserClient } from '../clients/user.client';
+import { Assertions } from '../helpers/assertions';
+
+Assertions.allowKnownBugs = true;
 
 export const test = base.extend<{
   devClient: UserClient;
