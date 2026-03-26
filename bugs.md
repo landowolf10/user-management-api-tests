@@ -46,6 +46,7 @@ curl --location 'http://localhost:3000/dev/users' \
     "email": "test@mail.com",
     "age": 1
   }'
+```
 
 ### Expected
 
@@ -79,7 +80,9 @@ Violates the API contract and forces clients to handle unexpected server errors 
 1. Call `GET /dev/users/nonexistent@test.com`
 
 curl:
+```bash
 curl --location 'http://localhost:3000/dev/users/test123@test.com'
+```
 
 ### Expected
 
@@ -152,23 +155,32 @@ Breaks resource lifecycle consistency and REST expectations (deleted resource sh
 3. Retrieve user via `GET /users/{email}`
 
 curl:
-1. curl --location 'http://localhost:3000/dev/users' \
+1. 
+```bash
+curl --location 'http://localhost:3000/dev/users' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "name": "Test",
     "email": "test-data@mail.com",
     "age": 1
   }'
+```
 
-2. curl --location --request PUT 'http://localhost:3000/dev/users/test-data@mail.com' \
+2. 
+```bash
+curl --location --request PUT 'http://localhost:3000/dev/users/test-data@mail.com' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "name": "Test",
     "email": "test-data@mail.com",
     "age": 15
   }'
+```
 
-3. curl --location 'http://localhost:3000/dev/users/test-data@mail.com'
+3. 
+```bash
+curl --location 'http://localhost:3000/dev/users/test-data@mail.com'
+```
 
 ### Expected
 
@@ -238,15 +250,21 @@ Endpoints requiring authorization token
 2. Call `DELETE /users/{email}` **without Authorization header**
 
 curl:
-1. curl --location 'http://localhost:3000/dev/users' \
+1.
+```bash
+ curl --location 'http://localhost:3000/dev/users' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "name": "Test",
     "email": "test-data@mail.com",
     "age": 1
   }'
+```
 
-2. curl --location --request DELETE 'http://localhost:3000/dev/users/test-data@mail.com'
+2. 
+```bash
+curl --location --request DELETE 'http://localhost:3000/dev/users/test-data@mail.com'
+```
 
 ### Expected
 
@@ -281,16 +299,22 @@ Endpoints requiring authorization token
 2. Call `DELETE /users/{email}` **with an invalid Authorization token**
 
 curl:
-1. curl --location 'http://localhost:3000/dev/users' \
+1. 
+```bash
+curl --location 'http://localhost:3000/dev/users' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "name": "Test",
     "email": "test-data@mail.com",
     "age": 1
   }'
+```
 
-2. curl --location --request DELETE 'http://localhost:3000/dev/users/test-data@mail.com' \
+2. 
+```bash
+curl --location --request DELETE 'http://localhost:3000/dev/users/test-data@mail.com' \
 --header 'Authentication: invalid-token'
+```
 
 ### Expected
 
