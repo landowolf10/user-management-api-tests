@@ -351,5 +351,3 @@ The API exhibits several issues that affect its **reliability, consistency, and 
 * Inconsistent validation rules
 * Critical security vulnerability (unauthorized DELETE)
 * API design inconsistencies
-
-These issues reduce the predictability of the API and increase the complexity of client-side error handling and integration.

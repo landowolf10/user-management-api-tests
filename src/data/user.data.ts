@@ -2,7 +2,7 @@ import { PartialUser, User } from '../types/user.types';
 
 export const generateUser = (overrides: PartialUser = {}): User => ({
     name: 'Test User',
-    email: `user_${Date.now()}_${Math.floor(Math.random()*10000)}@test.com`,
+    email: `user_${Date.now()}_${Math.floor(Math.random() * 10000)}@test.com`,
     age: 10,
     ...overrides
 });
