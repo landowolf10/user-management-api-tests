@@ -12,7 +12,6 @@ import {
 } from '../data/user.data';
 
 test.describe('@Users API', () => {
-
     test('GET /users - 200', async ({ client }) => {
         const res = await client.getUsers();
         await Assertions.expectStatus(res, 200);
@@ -180,6 +179,7 @@ test.describe('@Users API', () => {
         const res = await client.createUser(user);
         await Assertions.expectStatus(res, 201, {
             allowedStatuses: [500],
+            message: 'Known bug: POST to large email returns 500 instead of 400'
         });
     });
 
@@ -207,5 +207,4 @@ test.describe('@Users API', () => {
         const res = await client.updateUser(user.email, { ...user, extraField: 'oops' });
         await Assertions.expectStatus(res, 200);
     });
-
 });
