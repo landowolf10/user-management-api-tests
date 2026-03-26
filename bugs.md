@@ -37,6 +37,16 @@ All issues were discovered through automated E2E tests executed against both env
 1. Send a valid `POST /dev/users` request
 2. Repeat the same request with identical email
 
+curl:
+```bash
+curl --location 'http://localhost:3000/dev/users' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name": "Test",
+    "email": "test@mail.com",
+    "age": 1
+  }'
+
 ### Expected
 
 `409 Conflict`
@@ -67,6 +77,9 @@ Violates the API contract and forces clients to handle unexpected server errors 
 ### Steps to Reproduce
 
 1. Call `GET /dev/users/nonexistent@test.com`
+
+curl:
+curl --location 'http://localhost:3000/dev/users/test123@test.com'
 
 ### Expected
 
@@ -138,6 +151,25 @@ Breaks resource lifecycle consistency and REST expectations (deleted resource sh
 2. Update user via `PUT /users/{email}`
 3. Retrieve user via `GET /users/{email}`
 
+curl:
+1. curl --location 'http://localhost:3000/dev/users' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name": "Test",
+    "email": "test-data@mail.com",
+    "age": 1
+  }'
+
+2. curl --location --request PUT 'http://localhost:3000/dev/users/test-data@mail.com' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name": "Test",
+    "email": "test-data@mail.com",
+    "age": 15
+  }'
+
+3. curl --location 'http://localhost:3000/dev/users/test-data@mail.com'
+
 ### Expected
 
 Updated values should be returned
@@ -205,6 +237,17 @@ Endpoints requiring authorization token
 1. Create user
 2. Call `DELETE /users/{email}` **without Authorization header**
 
+curl:
+1. curl --location 'http://localhost:3000/dev/users' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name": "Test",
+    "email": "test-data@mail.com",
+    "age": 1
+  }'
+
+2. curl --location --request DELETE 'http://localhost:3000/dev/users/test-data@mail.com'
+
 ### Expected
 
 `401 Unauthorized`
@@ -237,6 +280,18 @@ Endpoints requiring authorization token
 1. Create user
 2. Call `DELETE /users/{email}` **with an invalid Authorization token**
 
+curl:
+1. curl --location 'http://localhost:3000/dev/users' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name": "Test",
+    "email": "test-data@mail.com",
+    "age": 1
+  }'
+
+2. curl --location --request DELETE 'http://localhost:3000/dev/users/test-data@mail.com' \
+--header 'Authentication: invalid-token'
+
 ### Expected
 
 `401 Unauthorized`
@@ -262,21 +317,6 @@ Critical security vulnerability — allows deletion of resources with any token,
 ## 5.1 Inconsistent authentication headers
 
 * **Severity:** Low
-
-### Observed Behavior
-
-* `POST` / `PUT` use:
-  `Authorization: Bearer <token>`
-* `DELETE` uses:
-  `Authentication: <token>`
-
-### Impact
-
-* Increases client complexity
-* Breaks consistency across endpoints
-* Higher risk of integration errors
-
----
 
 # Conclusion
 
