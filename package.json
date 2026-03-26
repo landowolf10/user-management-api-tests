@@ -5,9 +5,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "playwright test",
-    "test:dev": "playwright test --grep @dev",
-    "test:prod": "playwright test --grep @prod"
+    "test": "playwright test"
   },
   "keywords": [],
   "author": "",
