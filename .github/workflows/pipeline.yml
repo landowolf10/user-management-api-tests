@@ -77,9 +77,6 @@ jobs:
           mkdir -p public/dev
           mkdir -p public/prod
 
-          echo "🔍 Buscando reportes..."
-
-          # DEV
           DEV_REPORT=$(find reports/report-dev -name index.html | head -n 1)
           if [ -n "$DEV_REPORT" ]; then
             echo "DEV report encontrado en: $DEV_REPORT"
@@ -89,7 +86,6 @@ jobs:
             echo "No DEV report found"
           fi
 
-          # PROD
           PROD_REPORT=$(find reports/report-prod -name index.html | head -n 1)
           if [ -n "$PROD_REPORT" ]; then
             echo "PROD report encontrado en: $PROD_REPORT"
@@ -99,7 +95,6 @@ jobs:
             echo "No PROD report found"
           fi
 
-          # Crear menú principal
           cat <<EOF > public/index.html
           <html>
             <head>

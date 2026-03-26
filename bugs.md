@@ -30,7 +30,7 @@ All issues were discovered through automated E2E tests executed against both env
 
 ### Spec Reference
 
-`sdet_challenge_api.yml` → `POST /users` → **409 Conflict**
+`sdet_challenge_api.yml` - `POST /users` - **409 Conflict**
 
 ### Steps to Reproduce
 
@@ -51,7 +51,7 @@ Violates the API contract and forces clients to handle unexpected server errors 
 
 ### Detected by
 
-`users.dev.spec.ts` → *POST /users → 409 duplicate*
+`users.dev.spec.ts` - *POST /users - 409 duplicate*
 
 ---
 
@@ -62,7 +62,7 @@ Violates the API contract and forces clients to handle unexpected server errors 
 
 ### Spec Reference
 
-`sdet_challenge_api.yml` → `GET /users/{email}` → **404 Not Found**
+`sdet_challenge_api.yml` - `GET /users/{email}` - **404 Not Found**
 
 ### Steps to Reproduce
 
@@ -82,7 +82,7 @@ Breaks expected REST behavior for missing resources and complicates client-side 
 
 ### Detected by
 
-`users.dev.spec.ts` → *GET /users/{email} → 404*
+`users.dev.spec.ts` - *GET /users/{email} - 404*
 
 ---
 
@@ -115,7 +115,7 @@ Breaks resource lifecycle consistency and REST expectations (deleted resource sh
 
 ### Detected by
 
-`users.dev.spec.ts` → *DELETE /users → verify deletion*
+`users.dev.spec.ts` - *DELETE /users - verify deletion*
 
 ---
 
@@ -130,7 +130,7 @@ Breaks resource lifecycle consistency and REST expectations (deleted resource sh
 
 ### Spec Reference
 
-`sdet_challenge_api.yml` → `PUT /users/{email}` → Updated resource
+`sdet_challenge_api.yml` - `PUT /users/{email}` - Updated resource
 
 ### Steps to Reproduce
 
@@ -152,7 +152,7 @@ Data integrity issue — API reports success without actually modifying data.
 
 ### Detected by
 
-`users.dev.spec.ts` → *PUT /users → update user*
+`users.dev.spec.ts` - *PUT /users - update user*
 
 ---
 
@@ -219,7 +219,39 @@ Critical security vulnerability — allows unauthorized deletion of resources.
 
 ### Detected by
 
-`users.dev.spec.ts` → *DELETE /users → 401 missing token*
+`users.dev.spec.ts` - *DELETE /users - 401 missing token*
+
+---
+
+## 4.2 DELETE endpoint accepts invalid token
+
+* **Endpoint:** `DELETE /users/{email}`
+* **Severity:** Critical
+
+### Spec Reference
+
+Endpoints requiring authorization token
+
+### Steps to Reproduce
+
+1. Create user
+2. Call `DELETE /users/{email}` **with an invalid Authorization token**
+
+### Expected
+
+`401 Unauthorized`
+
+### Actual
+
+`204 No Content` — user is deleted despite invalid token
+
+### Impact
+
+Critical security vulnerability — allows deletion of resources with any token, not just valid ones.  
+
+### Detected by
+
+`users.dev.spec.ts` - *DELETE /users/{email} - 401 invalid token*
 
 ---
 

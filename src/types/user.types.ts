@@ -4,6 +4,8 @@ export interface User {
   age: number;
 }
 
+export type PartialUser = Partial<User>;
+
 export interface ErrorResponse {
   error: string;
 }

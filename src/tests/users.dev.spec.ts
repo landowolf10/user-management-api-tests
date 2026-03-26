@@ -30,6 +30,32 @@ test.describe('@dev Users API', () => {
         await Assertions.expectError(res, ErrorMessages.nameRequired);
     });
 
+    test('POST /users - age boundaries (1 and 150)', async ({ devClient }) => {
+        const minAgeUser = generateUser({ age: 1 });
+        const maxAgeUser = generateUser({ age: 150 });
+
+        const resMin = await devClient.createUser(minAgeUser);
+        await Assertions.expectStatus(resMin, 201);
+        await Assertions.expectUser(resMin, minAgeUser);
+
+        const resMax = await devClient.createUser(maxAgeUser);
+        await Assertions.expectStatus(resMax, 201);
+        await Assertions.expectUser(resMax, maxAgeUser);
+    });
+
+    test('POST /users - age below 1 and above 150', async ({ devClient }) => {
+        const tooLow = generateUser({ age: 0 });
+        const tooHigh = generateUser({ age: 151 });
+
+        const resLow = await devClient.createUser(tooLow);
+        await Assertions.expectStatus(resLow, 400);
+        await Assertions.expectError(resLow, ErrorMessages.ageRange);
+
+        const resHigh = await devClient.createUser(tooHigh);
+        await Assertions.expectStatus(resHigh, 400);
+        await Assertions.expectError(resHigh, ErrorMessages.ageRange);
+    });
+
     test('POST /users - 409 duplicate', async ({ devClient }) => {
         const user = generateUser();
 
@@ -149,6 +175,18 @@ test.describe('@dev Users API', () => {
             allowedStatuses: [500],
             message: 'Known bug: GET after DELETE returns 500 instead of 404',
         });
+    });
+
+    test('DELETE /users/{email} - 401 invalid token', async ({ devClient }) => {
+        const user = generateUser();
+        await devClient.createUser(user);
+
+        const res = await devClient.deleteUser(user.email, 'bad-token');
+        await Assertions.expectStatus(res, 401, {
+            allowedStatuses: [204],
+            message: 'Known bug: DELETE endpoint accepts invalid token',
+        });
+        await Assertions.expectError(res);
     });
 
     test('DELETE /users/{email} - 401 missing token', async ({ devClient }) => {

@@ -2,13 +2,8 @@ import test, { expect, APIResponse } from '@playwright/test';
 import { validateUserSchema, validateErrorSchema } from './schema.validator';
 
 export class Assertions {
-    // Activar “modo Known Bugs” globalmente
     static allowKnownBugs = false;
 
-    /**
-     * Verifica el status code de la respuesta.
-     * Si allowKnownBugs = true y el status está en allowedStatuses, se anota como bug y no falla.
-     */
     static async expectStatus(
         res: APIResponse,
         expected: number,
@@ -16,13 +11,11 @@ export class Assertions {
     ) {
         const actual = res.status();
 
-        // Status correcto
         if (actual === expected) {
             expect(actual).toBe(expected);
             return;
         }
 
-        // Bug conocido
         if (Assertions.allowKnownBugs && options?.allowedStatuses?.includes(actual)) {
             test.info().annotations.push({
                 type: 'bug',
@@ -31,17 +24,14 @@ export class Assertions {
             return;
         }
 
-        // Falla real
         expect(actual).toBe(expected);
     }
 
-    /** Verifica que la respuesta tenga JSON */
     static async expectJson(res: APIResponse) {
         const contentType = res.headers()['content-type'] || '';
         expect(contentType).toContain('application/json');
     }
 
-    /** Valida un usuario individual */
     static async expectUser(res: APIResponse, expectedUser?: any) {
         await this.expectJson(res);
 
@@ -55,7 +45,6 @@ export class Assertions {
         }
     }
 
-    /** Valida un array de usuarios */
     static async expectUsersArray(res: APIResponse, expectedUser?: any) {
         await this.expectJson(res);
 
@@ -71,9 +60,7 @@ export class Assertions {
         }
     }
 
-    /** Valida un error en la respuesta */
     static async expectError(res: APIResponse, message?: string) {
-        // Si Known Bug causa status inesperado o body vacío, no falla
         if (Assertions.allowKnownBugs && res.status() >= 200 && res.status() < 300) {
             return;
         }
@@ -87,7 +74,7 @@ export class Assertions {
                 expect(body.error).toBe(message);
             }
         } catch (err) {
-            if (Assertions.allowKnownBugs) return; // Ignora Known Bugs
+            if (Assertions.allowKnownBugs) return;
             throw err;
         }
     }

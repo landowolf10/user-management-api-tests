@@ -18,12 +18,6 @@ export class UserClient {
     };
   }
 
-  private get deleteHeaders() {
-    return {
-      Authentication: ENV.TOKEN
-    };
-  }
-
   getUsers() {
     return this.request.get(this.basePath);
   }
@@ -46,9 +40,11 @@ export class UserClient {
     });
   }
 
-  deleteUser(email: string) {
+  deleteUser(email: string, token?: string) {
     return this.request.delete(`${this.basePath}/${email}`, {
-      headers: this.deleteHeaders
+      headers: {
+            Authentication: token ?? ENV.TOKEN, // usa el token dado o el default
+        }
     });
   }
 
