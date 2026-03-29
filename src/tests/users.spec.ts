@@ -46,11 +46,11 @@ test.describe('@Users API', () => {
         await Assertions.expectStatus(resHigh, 400);
     });
 
-    test('POST /users - 409 duplicate', async ({ client, env }) => {
+    test('POST /users - 409 duplicate', async ({ client }) => {
         const user = generateUser();
         await client.createUser(user);
         const res = await client.createUser(user);
-        await Assertions.expectStatus(res, env === 'dev' ? 409 : 201, {
+        await Assertions.expectStatus(res, 409, {
             allowedStatuses: [500],
             message: 'Known bug: POST duplicate user returns 500 instead of 409'
         });
