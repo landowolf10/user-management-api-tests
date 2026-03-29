@@ -10,14 +10,14 @@ export const test = base.extend<{
   client: UserClient;
   env: Env;
 }>({
-  client: async ({ request }, use, testInfo) => {
-    const env = testInfo.project.name as Env;
+  client: async ({ request }, use) => {
+    const env = (process.env.ENV || 'dev') as Env;
     const client = new UserClient(request, env);
     await use(client);
   },
 
-  env: async ({ }, use, testInfo) => {
-    const env = testInfo.project.name as Env;
+  env: async ({ }, use) => {
+    const env = (process.env.ENV || 'dev') as Env;
     await use(env);
   },
 });
