@@ -11,6 +11,9 @@ build/
 # Playwright
 test-results/
 playwright-report/
+playwright-report-dev/
+playwright-report-prod/
+reports/
 playwright/.cache/
 
 # Reports

@@ -10,9 +10,8 @@ permissions:
   id-token: write
 
 jobs:
-  e2e:
+  test-dev:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -28,32 +27,87 @@ jobs:
             sleep 2
           done
 
-      - name: Run tests (Dockerized)
+      - name: Run DEV tests
         run: |
           docker run --rm \
             --network host \
             -e BASE_URL=http://localhost:3000 \
-            -v ${{ github.workspace }}/playwright-report:/app/playwright-report \
+            -e ENV=dev \
+            -v ${{ github.workspace }}/playwright-report-dev:/app/playwright-report \
             landowolf/users-api-tests:latest
 
-      - name: Upload report artifact
+      - name: Upload DEV report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
-          path: playwright-report/
+          name: playwright-report-dev
+          path: playwright-report-dev/
+
+  test-prod:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Start API
+        run: |
+          docker run -d -p 3000:3000 ghcr.io/danielsilva-loanpro/sdet-interview-challenge:latest
+
+      - name: Wait for API
+        run: |
+          until curl -s http://localhost:3000/prod/users > /dev/null; do
+            echo "Waiting for API..."
+            sleep 2
+          done
+
+      - name: Run PROD tests
+        run: |
+          docker run --rm \
+            --network host \
+            -e BASE_URL=http://localhost:3000 \
+            -e ENV=prod \
+            -v ${{ github.workspace }}/playwright-report-prod:/app/playwright-report \
+            landowolf/users-api-tests:latest
+
+      - name: Upload PROD report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-prod
+          path: playwright-report-prod/
 
   deploy-report:
-    needs: e2e
+    needs: [test-dev, test-prod]
     runs-on: ubuntu-latest
     if: always()
-
     steps:
-      - name: Download report
+      - name: Download DEV report
         uses: actions/download-artifact@v4
         with:
-          name: playwright-report
-          path: public
+          name: playwright-report-dev
+          path: public/dev
+
+      - name: Download PROD report
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-report-prod
+          path: public/prod
+
+      - name: Create index page
+        run: |
+          cat <<EOF > public/index.html
+          <!DOCTYPE html>
+          <html>
+            <head><title>Test Reports</title></head>
+            <body>
+              <h1>E2E Test Reports</h1>
+              <ul>
+                <li><a href="./dev/index.html">DEV Report</a></li>
+                <li><a href="./prod/index.html">PROD Report</a></li>
+              </ul>
+            </body>
+          </html>
+          EOF
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v4

@@ -6,20 +6,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 4 : undefined,
   fullyParallel: true,
-
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:3000',
   },
-
-  projects: [
-    {
-      name: 'dev',
-    },
-    {
-      name: 'prod',
-    },
-  ],
-
   reporter: [
     ['list'],
     ['html', {
